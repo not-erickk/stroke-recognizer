@@ -1,0 +1,5 @@
+/models/*
+/inputs/
+/tests/data/*
+/.idea/
+/.venv/
