@@ -1,23 +1,16 @@
 {
-    "test_sets": [
+  "test_sets": [
+    {
+      "name": "boxes",
+      "entry_point": "recognizer.boxes.boxes.run_boxes_test",
+      "params": [
         {
-            "name": "character_boxes",
-            "module": "recognizer.boxes.boxes",
-            "entry_point": "get_char_boxes",
-            "parameters": [
-                {
-                    "name": "psm_mode",
-                    "values": [6, 7, 8, 10]
-                },
-                {
-                    "name": "contrast",
-                    "values": [1.5, 2.0, 2.5]
-                },
-                {
-                    "name": "threshold",
-                    "values": [20, 150, 200]
-                }
-            ]
+          "name": "binarization_threshold",
+          "type": "int",
+          "range": [0, 75, 5]
         }
-    ]
+      ],
+      "input_image": "paty.jpg"
+    }
+  ]
 }

@@ -31,7 +31,7 @@ if in_colab:
     uploaded = files.upload()
     input_image = Image.open(io.BytesIO(uploaded[list(uploaded.keys())[0]]))
 else:
-    file_path = '../../inputs/q.test1.jpg'
+    file_path = '../../tests/inputs/q.test1.jpg'
     input_image = Image.open(file_path)
 
 image, _, _, _, _ = scale_and_pad(input_image)

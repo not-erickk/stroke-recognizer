@@ -1,235 +1,141 @@
 import json
 import os
+import sys
 import uuid
+import time
 from datetime import datetime
-from typing import Dict, List, Any
-import importlib
+from importlib import import_module
+from pathlib import Path
+from PIL import Image, ImageTk, ImageDraw
 import tkinter as tk
-from tkinter import ttk
-from PIL import Image, ImageTk
-import itertools
+import tkinter.scrolledtext as scrolledtext
 
-class TestSetViewer:
-    def __init__(self, root, history_data=None):
-        self.root = root
-        self.root.title("Test Set Results Viewer")
-        self.current_page = 0
-        self.items_per_page = 1
-        self.history_data = history_data or []
-        
-        # Main container
-        self.main_frame = ttk.Frame(root)
-        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Image frame
-        self.image_frame = ttk.Frame(self.main_frame)
-        self.image_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        # Parameters frame
-        self.params_frame = ttk.Frame(self.main_frame)
-        self.params_frame.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        # Navigation buttons
-        self.nav_frame = ttk.Frame(self.root)
-        self.nav_frame.pack(fill=tk.X, padx=10, pady=5)
-        
-        ttk.Button(self.nav_frame, text="Previous", command=self.prev_page).pack(side=tk.LEFT)
-        ttk.Button(self.nav_frame, text="Next", command=self.next_page).pack(side=tk.RIGHT)
-        
-        self.update_display()
-    
-    def update_display(self):
-        if not self.history_data:
-            return
-            
-        # Clear previous content
-        for widget in self.image_frame.winfo_children():
-            widget.destroy()
-        for widget in self.params_frame.winfo_children():
-            widget.destroy()
-            
-        # Get current item
-        start_idx = self.current_page * self.items_per_page
-        if start_idx >= len(self.history_data):
-            return
-            
-        item = self.history_data[start_idx]
-        
-        # Display image
-        try:
-            image_path = os.path.join('tests/data/outputs', item['uuid'] + '.jpg')
-            img = Image.open(image_path)
-            # Resize image to fit the frame
-            img.thumbnail((800, 600))
-            photo = ImageTk.PhotoImage(img)
-            label = ttk.Label(self.image_frame, image=photo)
-            label.image = photo  # Keep a reference
-            label.pack()
-        except Exception as e:
-            ttk.Label(self.image_frame, text=f"Error loading image: {e}").pack()
-        
-        # Display parameters
-        ttk.Label(self.params_frame, text=f"Test {start_idx + 1}/{len(self.history_data)}",
-                 font=('Arial', 12, 'bold')).pack(anchor='w', pady=5)
-        
-        params_path = os.path.join('tests/data/history', item['uuid'] + '.json')
-        try:
-            with open(params_path, 'r') as f:
-                params = json.load(f)
-                for key, value in params.items():
-                    ttk.Label(self.params_frame, 
-                            text=f"{key}: {value}").pack(anchor='w')
-        except Exception as e:
-            ttk.Label(self.params_frame, text=f"Error loading parameters: {e}").pack()
-            
-        # Show timestamps
-        ttk.Label(self.params_frame, text=f"\nStart: {item['start_time']}").pack(anchor='w')
-        ttk.Label(self.params_frame, text=f"End: {item['end_time']}").pack(anchor='w')
-    
-    def next_page(self):
-        if (self.current_page + 1) * self.items_per_page < len(self.history_data):
-            self.current_page += 1
-            self.update_display()
-    
-    def prev_page(self):
-        if self.current_page > 0:
-            self.current_page -= 1
-            self.update_display()
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
+HISTORY_PATH = os.path.join(os.path.dirname(__file__), 'data/history.json')
+HISTORY_DIR = os.path.join(os.path.dirname(__file__), 'data/history')
+OUTPUTS_DIR = os.path.join(os.path.dirname(__file__), 'data/outputs')
 
-def load_config() -> Dict:
-    """Load test configuration from config.json"""
-    with open('tests/config.json', 'r') as f:
+# Ensure directories exist
+os.makedirs(HISTORY_DIR, exist_ok=True)
+os.makedirs(OUTPUTS_DIR, exist_ok=True)
+
+def load_config():
+    with open(CONFIG_PATH) as f:
         return json.load(f)
 
-def load_history() -> List[Dict]:
-    """Load test history from history.json"""
-    try:
-        with open('tests/data/history.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+def load_history():
+    if not os.path.exists(HISTORY_PATH):
         return []
+    with open(HISTORY_PATH) as f:
+        return json.load(f)
 
-def save_history(history: List[Dict]):
-    """Save test history to history.json"""
-    with open('tests/data/history.json', 'w') as f:
+def save_history(history):
+    with open(HISTORY_PATH, 'w') as f:
         json.dump(history, f, indent=2)
 
-def run_test_set(test_set_config: Dict) -> List[Dict]:
-    """Run a test set with all parameter combinations"""
-    # Import the module dynamically
-    module_name = test_set_config['module']
-    function_name = test_set_config['entry_point']
-    module = importlib.import_module(module_name)
-    test_function = getattr(module, function_name)
-    
-    # Generate all parameter combinations
-    param_names = [p['name'] for p in test_set_config['parameters']]
-    param_values = [p['values'] for p in test_set_config['parameters']]
-    
-    results = []
-    
-    # For each combination of parameters
-    for values in itertools.product(*param_values):
-        params = dict(zip(param_names, values))
-        test_id = str(uuid.uuid4())
-        
-        # Record start time
-        start_time = datetime.now().isoformat()
-        
-        # Run the test
-        output_path = os.path.join('tests/data/outputs', f'{test_id}.jpg')
-        result = test_function('inputs/paty.jpg', output_path=output_path, **params)
-        
-        # Record end time
-        end_time = datetime.now().isoformat()
-        
-        # Save parameters
-        params_path = os.path.join('tests/data/history', f'{test_id}.json')
-        with open(params_path, 'w') as f:
-            json.dump(params, f, indent=2)
-        
-        # Record test metadata
-        results.append({
-            'uuid': test_id,
-            'start_time': start_time,
-            'end_time': end_time,
-            'test_set': test_set_config['name']
-        })
-    
-    return results
+def run_test_set(test_set):
+    print(f"Running test-set: {test_set['name']}")
+    entry_mod, entry_func = test_set['entry_point'].rsplit('.', 1)
+    mod = import_module(entry_mod)
+    func = getattr(mod, entry_func)
+    param = test_set['params'][0]
+    param_name = param['name']
+    start, stop, step = param['range']
+    input_image = os.path.join(os.path.dirname(__file__), f'inputs/{test_set['input_image']}')
+
+    test_records = []
+    for value in range(start, stop+1, step):
+        test_uuid = str(uuid.uuid4())
+        output_path = os.path.join(OUTPUTS_DIR, test_set['name'], f"{test_uuid}.jpg")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        params = {param_name: value}
+        t0 = time.time()
+        result = func(input_image, value, output_path)
+        t1 = time.time()
+        # Save params and result
+        params_record = {
+            'uuid': test_uuid,
+            'params': params,
+            'result': result,
+            'start_time': datetime.fromtimestamp(t0).isoformat(),
+            'end_time': datetime.fromtimestamp(t1).isoformat(),
+            'output_path': output_path
+        }
+        with open(os.path.join(HISTORY_DIR, f"{test_uuid}.json"), 'w') as f:
+            json.dump(params_record, f, indent=2)
+        test_records.append(params_record)
+        print(f"Test {value}: output saved to {output_path}")
+    # Update history.json
+    history = load_history()
+    history.append({
+        'test_set': test_set['name'],
+        'timestamp': datetime.now().isoformat(),
+        'tests': [r['uuid'] for r in test_records]
+    })
+    save_history(history)
+    print("Test-set complete.")
+
+def show_results():
+    history = load_history()
+    if not history:
+        print("No test-sets found.")
+        return
+    print("Available test-sets:")
+    for i, h in enumerate(history):
+        print(f"{i+1}. {h['test_set']} at {h['timestamp']}")
+    idx = int(input("Select test-set to view: ")) - 1
+    test_uuids = history[idx]['tests']
+    records = []
+    for uuid_ in test_uuids:
+        with open(os.path.join(HISTORY_DIR, f"{uuid_}.json")) as f:
+            records.append(json.load(f))
+    # Tkinter scrollable viewer
+    root = tk.Tk()
+    root.title("Test-set Results Viewer")
+    frame = tk.Frame(root)
+    frame.pack(fill=tk.BOTH, expand=True)
+    canvas = tk.Canvas(frame)
+    scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+    scroll_frame = tk.Frame(canvas)
+    scroll_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+    canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    for i, rec in enumerate(records):
+        img = Image.open(rec['output_path'])
+        img.thumbnail((300, 300))
+        img_tk = ImageTk.PhotoImage(img)
+        img_label = tk.Label(scroll_frame, image=img_tk)
+        img_label.image = img_tk
+        img_label.grid(row=i, column=0, padx=10, pady=10)
+        text = f"Test #{i+1}\nParams: {rec['params']}\nStart: {rec['start_time']}\nEnd: {rec['end_time']}"
+        text_label = tk.Label(scroll_frame, text=text, justify='left')
+        text_label.grid(row=i, column=1, sticky='w')
+    root.mainloop()
 
 def main():
-    # Load configuration
-    config = load_config()
-    
-    while True:
-        print("\nTest Set Manager")
-        print("1. Run test set")
-        print("2. Show results")
-        print("3. Exit")
-        
-        choice = input("Select an option: ")
-        
-        if choice == "1":
-            print("\nAvailable test sets:")
-            for i, test_set in enumerate(config['test_sets'], 1):
-                print(f"{i}. {test_set['name']}")
-            
-            try:
-                idx = int(input("Select test set number: ")) - 1
-                if 0 <= idx < len(config['test_sets']):
-                    # Run selected test set
-                    results = run_test_set(config['test_sets'][idx])
-                    
-                    # Update history
-                    history = load_history()
-                    history.extend(results)
-                    save_history(history)
-                    
-                    # Show results
-                    root = tk.Tk()
-                    viewer = TestSetViewer(root, results)
-                    root.mainloop()
-                else:
-                    print("Invalid selection")
-            except ValueError:
-                print("Invalid input")
-                
-        elif choice == "2":
-            history = load_history()
-            if not history:
-                print("No test history found")
-                continue
-            
-            # Group by test set
-            test_sets = {}
-            for item in history:
-                test_sets.setdefault(item['test_set'], []).append(item)
-            
-            print("\nAvailable test sets:")
-            test_set_names = list(test_sets.keys())
-            for i, name in enumerate(test_set_names, 1):
-                print(f"{i}. {name} ({len(test_sets[name])} tests)")
-            
-            try:
-                idx = int(input("Select test set number: ")) - 1
-                if 0 <= idx < len(test_set_names):
-                    # Show selected test set results
-                    root = tk.Tk()
-                    viewer = TestSetViewer(root, test_sets[test_set_names[idx]])
-                    root.mainloop()
-                else:
-                    print("Invalid selection")
-            except ValueError:
-                print("Invalid input")
-                
-        elif choice == "3":
-            break
-        else:
-            print("Invalid option")
+    print("Select an option:")
+    print("A) Run test-set")
+    print("B) Show results")
+    opt = input("Enter A or B: ").strip().upper()
+    if opt == 'A':
+        config = load_config()
+        test_sets = config['test_sets']
+        print("Available test-sets:")
+        for i, ts in enumerate(test_sets):
+            print(f"{i+1}. {ts['name']}")
+        idx = int(input("Select test-set: ")) - 1
+        run_test_set(test_sets[idx])
+    elif opt == 'B':
+        show_results()
+    else:
+        print("Invalid option.")
 
 if __name__ == "__main__":
-    # Create necessary directories
-    os.makedirs('tests/data/outputs', exist_ok=True)
-    os.makedirs('tests/data/history', exist_ok=True)
     main()

@@ -1,5 +1,5 @@
 /models/*
-/inputs/
+/tests/inputs/
 /tests/data/*
 /.idea/
 /.venv/

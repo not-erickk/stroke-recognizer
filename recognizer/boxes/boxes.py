@@ -2,8 +2,10 @@ import pytesseract
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 import numpy as np
 from typing import List, Tuple
+import sys
+import os
 
-def preprocess_image(image: Image.Image) -> Image.Image:
+def preprocess_image(image: Image.Image, binarization_threshold: int = 20) -> Image.Image:
     """
     Preprocess the image to improve character detection.
     """
@@ -15,7 +17,7 @@ def preprocess_image(image: Image.Image) -> Image.Image:
     image = enhancer.enhance(2.0)
     
     # Binarize the image
-    threshold = 20
+    threshold = binarization_threshold
     image = image.point(lambda x: 0 if x < threshold else 255, '1')
     
     # Remove noise
@@ -23,13 +25,13 @@ def preprocess_image(image: Image.Image) -> Image.Image:
     
     return image
 
-def get_char_boxes(image_path: str) -> List[Tuple[int, int, int, int]]:
+def get_char_boxes(image_path: str, binarization_threshold: int = 20) -> List[Tuple[int, int, int, int]]:
     """
     Extract character-level bounding boxes from a handwritten word image using Tesseract OCR.
     """
     # Load and preprocess the image
     image = Image.open(image_path)
-    processed_image = preprocess_image(image)
+    processed_image = preprocess_image(image, binarization_threshold)
     
     # Configure Tesseract for character-level detection
     custom_config = r'--psm 6 --oem 3 -c textord_min_linesize=1.0 ' \
@@ -77,20 +79,29 @@ def visualize_boxes(image_path: str, boxes: List[Tuple[int, int, int, int]],
     
     return image
 
+def run_boxes_test(input_image: str, binarization_threshold: int, output_path: str) -> dict:
+    """
+    Run the boxes test for a given image and threshold, save output image, and return result info.
+    """
+    boxes = get_char_boxes(input_image, binarization_threshold)
+    visualize_boxes(input_image, boxes, output_path)
+    return {
+        "num_boxes": len(boxes),
+        "boxes": boxes
+    }
+
 def main():
-    """Example usage"""
-    image_path = 'inputs/paty.jpg'  # Path to the input image
-    
-    # Get character boxes
-    boxes = get_char_boxes(image_path)
-    
-    # Visualize and save results
-    output_path = "output_boxes.jpg"
-    visualized_image = visualize_boxes(image_path, boxes, output_path)
-    
-    print(f"Found {len(boxes)} character boxes")
+    """Allow running as a script with CLI args: input_image, binarization_threshold, output_path"""
+    import argparse
+    parser = argparse.ArgumentParser(description="Run boxes test.")
+    parser.add_argument('--input_image', type=str, required=True)
+    parser.add_argument('--binarization_threshold', type=int, default=20)
+    parser.add_argument('--output_path', type=str, required=True)
+    args = parser.parse_args()
+    result = run_boxes_test(args.input_image, args.binarization_threshold, args.output_path)
+    print(f"Found {result['num_boxes']} character boxes")
     print("Boxes coordinates (x, y, width, height):")
-    for box in boxes:
+    for box in result['boxes']:
         print(box)
 
 if __name__ == "__main__":
