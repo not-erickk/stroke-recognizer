@@ -239,14 +239,20 @@ def scale_and_pad(original, pad_black=True):
     ratio = min(224 / original.width, 224 / original.height)
     original_np = np.array(original)
     new_crop = original.resize((int(original.width * ratio), int(original.height * ratio)))
-    pixel_1 = original_np[1, 1]
-    pixel_2 = original_np[1, original_np.shape[-1]-1]
-    pixel_3 = original_np[original_np.shape[0]-1, 1]
-    pixel_4 = original_np[original_np.shape[0]-1, original_np.shape[-1]-1]
-    avg = np.rint(np.mean([pixel_1, pixel_2, pixel_3, pixel_4], axis=0)).astype(np.uint8)
 
-    color = tuple(avg) if not pad_black else (0, 0, 0)
-    new_image = Image.new(new_crop.mode, (224, 224), color)
+    # Handle different image modes
+    if original.mode == '1':  # Binary image
+        color = 0 if pad_black else 1
+        new_image = Image.new(original.mode, (224, 224), color)
+    else:  # RGB or L mode
+        pixel_1 = original_np[1, 1]
+        pixel_2 = original_np[1, original_np.shape[-1]-1]
+        pixel_3 = original_np[original_np.shape[0]-1, 1]
+        pixel_4 = original_np[original_np.shape[0]-1, original_np.shape[-1]-1]
+        avg = np.rint(np.mean([pixel_1, pixel_2, pixel_3, pixel_4], axis=0)).astype(np.uint8)
+        color = tuple(avg) if not pad_black else (0, 0, 0)
+        new_image = Image.new(new_crop.mode, (224, 224), color)
+
     dx = (224 - new_crop.width) // 2
     dy = (224 - new_crop.height) // 2
     new_image.paste(new_crop, (dx, dy))
@@ -298,3 +304,4 @@ def unpad_unscale_unrotate_uncrop(ink, ratio, dx, dy, min_x, min_y, angle):
 
     transformed_ink = Ink(transformed_strokes)
     return transformed_ink
+

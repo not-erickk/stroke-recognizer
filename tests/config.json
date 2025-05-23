@@ -2,13 +2,9 @@
   "test_sets": [
     {
       "name": "boxes",
-      "entry_point": "recognizer.boxes.boxes.test_flow",
+      "entry_point": "recognizer.main.boxes.boxes.test_flow",
+      "input_image": "lovec (1).jpg",
       "params_config": [
-        {
-          "name": "img_path",
-          "type": "str",
-          "value": "lovec (1).jpg"
-        },
         {
           "name": "binarization_threshold",
           "type": "range",
@@ -25,6 +21,34 @@
           "value": 3
         }
       ]
+    },
+    {
+      "name": "recognizer",
+      "entry_point": "recognizer.recognizer.test_flow",
+      "input_image": "lovec (1).jpg",
+      "params_config": [
+        {
+          "name": "binarization_threshold",
+          "type": "range",
+          "value": [0, 200, 20]
+        },
+        {
+          "name": "page_segmentation_mode",
+          "type": "range",
+          "value": [6, 13, 1]
+        },
+        {
+          "name": "ocr_engine_mode",
+          "type": "int",
+          "value": 3
+        },
+        {
+          "name": "prompt",
+          "type": "str",
+          "value": "Derender the ink:"
+        }
+      ]
     }
   ]
 }
+

@@ -1,16 +1,12 @@
 import json
 import math
 import os
-import sys
-import traceback
 import uuid
 import time
 from datetime import datetime
 from importlib import import_module
-from pathlib import Path
-from PIL import Image, ImageTk, ImageDraw
+from PIL import Image, ImageTk
 import tkinter as tk
-import tkinter.scrolledtext as scrolledtext
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 HISTORY_PATH = os.path.join(os.path.dirname(__file__), 'data/history.json')
