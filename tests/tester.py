@@ -54,31 +54,64 @@ def exec_test(test_set_name: str, params: dict, func, input_img_path: str):
     return params_record
 
 def run_test_set(test_set):
+    def param_values_to_test(p: dict):
+        p_value = p['value']
+        if type(p_value) != list:
+            return 1
+
+        if p['type'] == 'range':
+            if len(p_value) != 3:
+                raise Exception(f"param {p['name']} range must have start, stop and step values")
+            start, stop, step = p_value
+            if step < 1:
+                raise Exception(f"param {p['name']} step must be at least 1")
+            if start >= stop:
+                raise Exception(f"param {p['name']} range is backwards")
+            if start == stop:
+                return 1
+            return math.ceil((stop - start + 1) / step)
+        else:
+            return len(p_value)
+
     print(f"Running test-set: {test_set['name']}")
     entry_mod, entry_func = test_set['entry_point'].rsplit('.', 1)
     params_config = test_set['params_config']
     mod = import_module(entry_mod)
     func = getattr(mod, entry_func)
-    total_tests = math.prod([int(p['range'][1] - p['range'][0] / p['range'][2]) for p in params_config])
+    total_tests = math.prod([param_values_to_test(p) for p in params_config])
     test_records = []
     input_img_path = os.path.join(os.path.dirname(__file__), f'inputs/{test_set['input_image']}')
 
     def iterative_param_building(params=None, param_idx: int = 0):
         if params is None:
             params = {}
-        p_config = params_config[param_idx]
-        start, stop, step = p_config['range']
-        for i, value in enumerate(range(start, stop + 1, step)):
-            params[p_config['name']] = value
-            if param_idx == len(params_config) - 1:
-                params_record = exec_test(test_set['name'], params, func, input_img_path)
-                with open(os.path.join(HISTORY_DIR, f"{params_record['uuid']}.json"), 'w') as f:
-                    json.dump(params_record, f, indent=2)
-                test_records.append(params_record)
 
-                print(f"Test {len(test_records)}/{total_tests}: output saved to {params_record['output_path']}")
-            else:
+        if param_idx >= len(params_config):
+            params_record = exec_test(test_set['name'], params.copy(), func, input_img_path)
+            with open(os.path.join(HISTORY_DIR, f"{params_record['uuid']}.json"), 'w') as f:
+                json.dump(params_record, f, indent=2)
+            test_records.append(params_record)
+            print(f"Test {len(test_records)}/{total_tests}: output saved to {params_record['output_path']}")
+            return
+
+        p_config = params_config[param_idx]
+        p_value = p_config['value']
+
+        # Handle list values
+        if isinstance(p_value, list):
+            for value in p_value:
+                params[p_config['name']] = value
                 iterative_param_building(params, param_idx + 1)
+        # Handle range type
+        elif p_config['type'] == 'range':
+            start, stop, step = p_value
+            for value in range(start, stop + 1, step):
+                params[p_config['name']] = value
+                iterative_param_building(params, param_idx + 1)
+        # Handle non-list type (single values)
+        else:
+            params[p_config['name']] = p_value
+            iterative_param_building(params, param_idx + 1)
 
     iterative_param_building()
     # Update history.json

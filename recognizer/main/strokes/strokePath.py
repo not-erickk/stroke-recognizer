@@ -11,7 +11,7 @@ from PIL import Image
 from utils import plot_ink
 from utils.utils import detokenize, text_to_tokens, load_and_pad_img, scale_and_pad
 
-model = tf.saved_model.load('../../models/small-p-cpu')
+model = tf.saved_model.load('../../../models/small-p-cpu')
 #model = from_pretrained_keras("Derendering/InkSight-Small-p")
 #model = keras.saving.load_model('Derendering/InkSight-Small-p')
 cf = model.signatures['serving_default']
@@ -31,7 +31,7 @@ if in_colab:
     uploaded = files.upload()
     input_image = Image.open(io.BytesIO(uploaded[list(uploaded.keys())[0]]))
 else:
-    file_path = '../../tests/inputs/m (1).jpg'
+    file_path = '../../../tests/inputs/m (1).jpg'
     input_image = Image.open(file_path)
 
 image, _, _, _, _ = scale_and_pad(input_image)

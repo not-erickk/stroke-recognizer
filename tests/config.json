@@ -2,25 +2,29 @@
   "test_sets": [
     {
       "name": "boxes",
-      "entry_point": "recognizer.boxes.boxes.run_boxes_test",
+      "entry_point": "recognizer.boxes.boxes.test_flow",
       "params_config": [
         {
+          "name": "img_path",
+          "type": "str",
+          "value": "lovec (1).jpg"
+        },
+        {
           "name": "binarization_threshold",
-          "type": "int",
-          "range": [0, 200, 20]
+          "type": "range",
+          "value": [0, 200, 20]
         },
         {
           "name": "page_segmentation_mode",
-          "type": "int",
-          "range": [6, 13, 1]
+          "type": "range",
+          "value": [6, 13, 1]
         },
         {
           "name": "ocr_engine_mode",
           "type": "int",
-          "range": [3, 3, 1]
+          "value": 3
         }
-      ],
-      "input_image": "lovec (1).jpg"
+      ]
     }
   ]
 }

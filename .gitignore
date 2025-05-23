@@ -3,3 +3,4 @@
 /tests/data/*
 /.idea/
 /.venv/
+/prompts/
