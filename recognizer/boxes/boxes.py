@@ -25,21 +25,21 @@ def preprocess_image(image: Image.Image, binarization_threshold: int = 20) -> Im
     
     return image
 
-def get_char_boxes(image_path: str, binarization_threshold: int = 20) -> List[Tuple[int, int, int, int]]:
+def get_char_boxes(image_path: str, threshold: int = 20, psm: int = 6, oem: int = 3) -> List[Tuple[int, int, int, int]]:
     """
     Extract character-level bounding boxes from a handwritten word image using Tesseract OCR.
     """
     # Load and preprocess the image
     image = Image.open(image_path)
-    processed_image = preprocess_image(image, binarization_threshold)
+    processed_image = preprocess_image(image, threshold)
     
     # Configure Tesseract for character-level detection
-    custom_config = r'--psm 6 --oem 3 -c textord_min_linesize=1.0 ' \
+    custom_config = rf'--psm {psm} --oem {oem} -c textord_min_linesize=1.0 ' \
                    r'-c preserve_interword_spaces=1 -c tessedit_char_whitelist=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     
     # Get character-level data from Tesseract
     char_boxes = pytesseract.image_to_boxes(processed_image, config=custom_config)
-    
+
     # Parse character boxes
     boxes = []
     for box in char_boxes.splitlines():
@@ -79,11 +79,14 @@ def visualize_boxes(image_path: str, boxes: List[Tuple[int, int, int, int]],
     
     return image
 
-def run_boxes_test(input_image: str, binarization_threshold: int, output_path: str) -> dict:
+def run_boxes_test(input_image: str, params: dict, output_path: str) -> dict:
     """
     Run the boxes test for a given image and threshold, save output image, and return result info.
     """
-    boxes = get_char_boxes(input_image, binarization_threshold)
+    threshold = params['binarization_threshold']
+    psm = params['page_segmentation_mode']
+    oem = params['ocr_engine_mode']
+    boxes = get_char_boxes(input_image, threshold, psm, oem)
     visualize_boxes(input_image, boxes, output_path)
     return {
         "num_boxes": len(boxes),

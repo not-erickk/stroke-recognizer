@@ -3,14 +3,24 @@
     {
       "name": "boxes",
       "entry_point": "recognizer.boxes.boxes.run_boxes_test",
-      "params": [
+      "params_config": [
         {
           "name": "binarization_threshold",
           "type": "int",
-          "range": [0, 75, 5]
+          "range": [0, 200, 20]
+        },
+        {
+          "name": "page_segmentation_mode",
+          "type": "int",
+          "range": [6, 13, 1]
+        },
+        {
+          "name": "ocr_engine_mode",
+          "type": "int",
+          "range": [3, 3, 1]
         }
       ],
-      "input_image": "paty.jpg"
+      "input_image": "lovec (1).jpg"
     }
   ]
 }
