@@ -8,6 +8,8 @@ from importlib import import_module
 from PIL import Image, ImageTk
 import tkinter as tk
 
+from recognizer.main.boxes.boxes import Boxes
+
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 HISTORY_PATH = os.path.join(os.path.dirname(__file__), 'data/history.json')
 HISTORY_DIR = os.path.join(os.path.dirname(__file__), 'data/history')
@@ -70,6 +72,8 @@ def run_test_set(test_set):
             return len(p_value)
 
     print(f"Running test-set: {test_set['name']}")
+    if test_set['name'] == 'boxes':
+        Boxes()
     entry_mod, entry_func = test_set['entry_point'].rsplit('.', 1)
     params_config = test_set['params_config']
     mod = import_module(entry_mod)

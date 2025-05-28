@@ -1,7 +1,12 @@
 import os
 
+from PIL.Image import Image
+
 # Define the tests directory as a constant
 ROOT_DIR = "inkSightTesting"
+
+def open(path:str):
+    Image.open(path)
 
 def build_path(file_name: str, local_path: str) -> str:
     return os.path.join(get_root_dir(), local_path, file_name)
@@ -29,3 +34,6 @@ def from_inputs(file_name: str) -> str:
 
 def from_models(file_name: str) -> str:
     return build_path(file_name, "models")
+
+def from_tests(file_name: str = '') -> str:
+    return build_path(file_name, "tests")

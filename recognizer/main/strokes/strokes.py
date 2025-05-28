@@ -1,22 +1,26 @@
+import logging
 import os
 
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-import uuid
 from typing import Dict, Any, Tuple
 
 from matplotlib import pyplot as plt
 
+from recognizer.main.boxes.boxes import Boxes
+from recognizer.midprocessing import midprocessing
 from recognizer.preprocessing import preprocessing
 from recognizer.main.boxes import boxes
-from utils import plot_ink
+from utils import plot_ink, paths
 from utils.paths import from_inputs, from_models
 from utils.utils import scale_and_pad, detokenize, text_to_tokens, load_and_pad_img
 
 # Load the model once when module is imported
 MODEL_PATH = from_models('small-p-cpu')
-
+# logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('dev')
+logger.setLevel(tf.compat.v1.logging.DEBUG)
 
 def run_flow(image: Image, prompt: str):
     # Scale and pad the image
@@ -78,39 +82,52 @@ def save_test_outputs(char_images: list, test_uuid: str, output_dir: str) -> Dic
     }
 
 
-def test_flow(input_images: list, chars: list, params: dict) -> list:
+def test_flow(boxes_data: list, params: dict) -> list:
     results = []
-    # for image in input_images:
-    #     image.show()
-    # for i, image in enumerate(input_images):
-    #     prompt = f'{params['prompt']}{i}'
-    with input_images[1] as image:
-        prompt = f'{params['prompt']}{1}'
-        results.append((run_flow(image, prompt), image))
+    for i, data in enumerate(boxes_data):
+        prompt = f'{params['prompt']}{data['char']}'
+        img = data['cropped_img']
+        logger.debug(f'Recognizing char {i}, prompt: "{prompt}"')
+        ink_data = run_flow(img, prompt)
+        fig, ax = plt.subplots()
+        plot_ink(ink_data, ax, input_image=load_and_pad_img(img))
+        plt.savefig(paths.from_tests(f'temp/{data['char']}{i}'))
+        plt.close()
+        plt.show()
+        results.append((ink_data, img))
     return results
 
 
 if __name__ == '__main__':
     #fine tuned
     params = {
-        'binarization_threshold': 60,
-        'page_segmentation_mode': 9,
+        'binarization_threshold': 20,
+        'page_segmentation_mode': 8,
         'ocr_engine_mode': 3,
         'prompt': 'Derender the ink: '
     }
-    psm, oem = params['page_segmentation_mode'], params['ocr_engine_mode']
-    img_path = from_inputs('paty.raw.jpg')
-    image = preprocessing.run_flow(img_path, params)
-    # image.show()
-    boxes, char_images, chars = boxes.run_flow(image, psm, oem)
-    if len(char_images) > 1:
-    #     char_images[1].show()
-        pass
-    else:
-        raise Exception(f'{len(char_images)} chars? wtf')
-    results = test_flow(char_images, chars, params)
-    for ink_data, image in results:
-        fig, ax = plt.subplots()
-        plot_ink(ink_data, ax, input_image=load_and_pad_img(image))
-        plt.show()
+    threshold, psm, oem = params['binarization_threshold'], params['page_segmentation_mode'], params['ocr_engine_mode']
+    img = Image.open(from_inputs('casa.jpg'))
+    logger.debug(f'Preprocessing picture')
+    preprocessed_img = preprocessing.run_flow(img, threshold)
+    # preprocessed_img.show('Preprocessed image')
+
+    logger.debug(f'Running boxes module')
+    boxes_mod = Boxes(preprocessed_img, img)
+    output = boxes_mod.run_flow(psm, oem)
+    logger.debug(f'{len(output)} boxes detected')
+    # boxes_mod.visualize_boxes().show()
+
+    logger.debug(f'Midprocessing pictures')
+    for i, data in enumerate(output):
+        midprocessed_img = midprocessing.run_flow(data['cropped_img'])
+        output[i]['cropped_img'] = midprocessed_img
+        midprocessed_img.show('Midprocessed image')
+
+    logger.debug(f'Running strokes module')
+    results = test_flow(output, params)
+    # for ink_data, image in results:
+    #     fig, ax = plt.subplots()
+    #     plot_ink(ink_data, ax, input_image=load_and_pad_img(image))
+    #     plt.show()
 

@@ -3,17 +3,17 @@
     {
       "name": "boxes",
       "entry_point": "recognizer.main.boxes.boxes.test_flow",
-      "input_image": "lovec (1).jpg",
+      "input_image": "dia.jpg",
       "params_config": [
         {
           "name": "binarization_threshold",
           "type": "range",
-          "value": [0, 200, 20]
+          "value": [0, 255, 5]
         },
         {
           "name": "page_segmentation_mode",
           "type": "range",
-          "value": [6, 13, 1]
+          "value": 8
         },
         {
           "name": "ocr_engine_mode",
@@ -25,7 +25,7 @@
     {
       "name": "recognizer",
       "entry_point": "recognizer.recognizer.test_flow",
-      "input_image": "lovec (1).jpg",
+      "input_image": "dia.jpg",
       "params_config": [
         {
           "name": "binarization_threshold",
@@ -35,7 +35,7 @@
         {
           "name": "page_segmentation_mode",
           "type": "range",
-          "value": [6, 13, 1]
+          "value": 8
         },
         {
           "name": "ocr_engine_mode",
