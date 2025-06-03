@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import requests
 import logging
 from requests import RequestException
+import call_model
 
 # Configure logging
 # Configure logging
@@ -21,7 +22,7 @@ def analyze():
             return jsonify({"status": 'ERROR', 'msg': f'{field} is missing' }), 400
 
         # Start webhook in background thread
-        thread = threading.Thread(target=webhook_worker, args=(data['webhook'],))
+        thread = threading.Thread(target=webhook_worker, args=(data,))
         thread.start()
 
         return jsonify({
@@ -53,11 +54,10 @@ def send_webhook(url: str, analysis: dict, max_retries: int=10, retry_delay: int
             time.sleep(retry_delay)
     return False
 
-def webhook_worker(url: str):
-    time.sleep(10)
-    analysis = {
-        'ola': 'true'
-    }
+def webhook_worker(data: dict) -> None:
+    # time.sleep(10)
+    url, encoded_img = data['webhook'], data['encodedImage']
+    analysis = call_model.execute(encoded_img)
     success = send_webhook(url, analysis)
     if not success:
         logger.error("Webhook call failed after all retries")

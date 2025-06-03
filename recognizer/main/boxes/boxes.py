@@ -88,6 +88,9 @@ if __name__ == '__main__':
     boxes_mod = Boxes(image, original_img)
     output = boxes_mod.test_flow(params)
     boxes_mod.visualize_boxes().show()
+
+
+
     print([out['char'] for out in output])
     # for char_data in output:
     #     char_data['cropped_img'].show()

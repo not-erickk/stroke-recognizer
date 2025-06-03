@@ -1,3 +1,6 @@
+import os
+import time
+
 import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
@@ -31,7 +34,21 @@ def test_flow(image: Image, threshold: int) -> Image.Image:
     return run_flow(image, threshold)
 
 if __name__ == '__main__':
-    binarization_threshold =100
-    original_img = Image.open(from_inputs('paty.raw.jpg'))
-    preprocessed = test_flow(original_img, binarization_threshold)
-    preprocessed.show()
+    input_path = '/home/not_erickk/Projects/trabajo_Terminal/dataset/plantilla/files_raw'
+    output_path = '/home/not_erickk/Projects/trabajo_Terminal/dataset/plantilla/files_preprocessed'
+
+    first = True
+    for img_file in sorted(os.listdir(input_path), key=lambda k: np.random.random()):
+        if img_file.endswith(('.jpg', '.jpeg', '.png')):
+            input_file = os.path.join(input_path, img_file)
+            output_file = os.path.join(output_path, img_file)
+
+            binarization_threshold =130
+            original_img = Image.open(input_file)
+            preprocessed = test_flow(original_img, binarization_threshold)
+            if first:
+                preprocessed.show()
+                time.sleep(5)
+                first = False
+            preprocessed.save(output_file)
+            print(f"Processed and saved to {output_file}")
