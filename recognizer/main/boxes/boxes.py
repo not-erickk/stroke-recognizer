@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import pytesseract
 from PIL import Image, ImageDraw
 from typing import List, Tuple
@@ -39,7 +42,7 @@ class Boxes:
                 self.output.append({
                     'box': (x, y, w, h),
                     'char': char,
-                    'cropped_img': self.original_image.crop((left, self.image.height - top, right, self.image.height - bottom))
+                    'cropped_img': self.image.crop((left, self.image.height - top, right, self.image.height - bottom))
                 })
 
         return self.output
@@ -74,14 +77,17 @@ class Boxes:
 if __name__ == '__main__':
     #fine tuned
     params = {
-        'binarization_threshold': 100,
+        'binarization_threshold': 75,
         'page_segmentation_mode': 6,
         'ocr_engine_mode': 3
     }
     threshold = params['binarization_threshold']
-    img_path = from_inputs('paty.jpg')
-    image = preprocessing.run_flow(img_path, threshold)
-    boxes_mod = Boxes(image)
+    img_path = '/home/not_erickk/Projects/trabajo_Terminal/dataset/plantilla/files/19voces.jpeg'
+    original_img = Image.open(img_path)
+    image = preprocessing.run_flow(original_img, threshold)
+    boxes_mod = Boxes(image, original_img)
     output = boxes_mod.test_flow(params)
-    for char_data in output:
-        char_data['cropped_img'].show()
+    boxes_mod.visualize_boxes().show()
+    print([out['char'] for out in output])
+    # for char_data in output:
+    #     char_data['cropped_img'].show()
