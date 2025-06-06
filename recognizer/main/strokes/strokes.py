@@ -4,14 +4,13 @@ import os
 import numpy as np
 import tensorflow as tf
 from PIL import Image
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 
 from matplotlib import pyplot as plt
 
 from recognizer.main.boxes.boxes import Boxes
 from recognizer.midprocessing import midprocessing
-from recognizer.preprocessing import preprocessing
-from recognizer.main.boxes import boxes
+from api import preprocessing
 from utils import plot_ink, paths
 from utils.paths import from_inputs, from_models
 from utils.utils import scale_and_pad, detokenize, text_to_tokens, load_and_pad_img

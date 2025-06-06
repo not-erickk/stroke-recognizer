@@ -1,10 +1,7 @@
 import os
 import time
-
-import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
-from utils.paths import from_inputs
 
 
 def run_flow(image: Image, threshold: int) -> Image.Image:

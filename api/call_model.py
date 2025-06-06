@@ -6,10 +6,15 @@ from PIL import Image, ImageDraw
 import json
 import tempfile
 
+import preprocessing
+
 # Configuración de Roboflow
 API_KEY = "G6QW6ebEy90X8t57vTDA"
 PROJECT_NAME = "detect-and-classify-object-detection-izxgz"
-MODEL_VERSION = 1
+MODEL_VERSION = 8
+BIN_THRESHOLD = 100
+CONFIDENCE_THRESHOLD = 40
+OVERLAP_THRESHOLD = 40
 
 
 def initialize_model(local: bool = False):
@@ -40,11 +45,12 @@ def base64_to_image(base64_string):
     # Decodificar base64
     image_data = base64.b64decode(base64_string)
     image = Image.open(io.BytesIO(image_data))
-
+    image = preprocessing.run_flow(image, BIN_THRESHOLD)
+    image.show()
     return image
 
 
-def perform_inference(model, image_data, confidence=40, overlap=30):
+def perform_inference(model, image_data):
     """
     Realiza inferencia sobre una imagen
     
@@ -64,14 +70,14 @@ def perform_inference(model, image_data, confidence=40, overlap=30):
                 image.save(tmp_file.name)
                 temp_path = tmp_file.name
 
-            prediction = model.predict(temp_path, confidence=confidence, overlap=overlap)
+            prediction = model.predict(temp_path, confidence=CONFIDENCE_THRESHOLD, overlap=OVERLAP_THRESHOLD)
 
             os.unlink(temp_path)
 
         except Exception as e:
             raise Exception(f"Error procesando imagen base64: {str(e)}")
     else:
-        prediction = model.predict(image_data, confidence=confidence, overlap=overlap)
+        prediction = model.predict(image_data, confidence=CONFIDENCE_THRESHOLD, overlap=OVERLAP_THRESHOLD)
 
     prediction_json = prediction.json()
     return prediction, prediction_json
@@ -167,23 +173,23 @@ def execute(base64_image_string):
 
         predictions = prediction_json.get('predictions', [])
 
-        original_image = base64_to_image(base64_image_string)
-        preview_img = original_image.copy().convert("RGBA")
-        draw = ImageDraw.Draw(preview_img)
-
-        for pred in predictions:
-            x, y = pred.get('x', 0), pred.get('y', 0)
-            w, h = pred.get('width', 0), pred.get('height', 0)
-            x1 = int(x - w / 2)
-            y1 = int(y - h / 2)
-            x2 = int(x + w / 2)
-            y2 = int(y + h / 2)
-            draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
-            draw.text((x1, y1 - 20), pred.get('class', ''), fill='red')
-
-        buffered = io.BytesIO()
-        preview_img.save(buffered, format="PNG")
-        base64_analysis_img = base64.b64encode(buffered.getvalue()).decode()
+        # original_image = base64_to_image(base64_image_string)
+        # preview_img = original_image.copy().convert("RGBA")
+        # draw = ImageDraw.Draw(preview_img)
+        #
+        # for pred in predictions:
+        #     x, y = pred.get('x', 0), pred.get('y', 0)
+        #     w, h = pred.get('width', 0), pred.get('height', 0)
+        #     x1 = int(x - w / 2)
+        #     y1 = int(y - h / 2)
+        #     x2 = int(x + w / 2)
+        #     y2 = int(y + h / 2)
+        #     draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
+        #     draw.text((x1, y1 - 20), pred.get('class', ''), fill='red')
+        #
+        # buffered = io.BytesIO()
+        # preview_img.save(buffered, format="PNG")
+        # base64_analysis_img = base64.b64encode(buffered.getvalue()).decode()
 
         formatted_predictions = []
         for pred in predictions:
@@ -201,7 +207,7 @@ def execute(base64_image_string):
             "status": "success",
             "predictions": formatted_predictions,
             "num_detections": len(predictions),
-            "analysis_img": base64_analysis_img
+            "analysis_img": 'fake_img'
         }
 
 

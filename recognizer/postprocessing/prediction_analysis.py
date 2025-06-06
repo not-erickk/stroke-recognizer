@@ -264,5 +264,5 @@ class PredictionAnalysis:
 
         return {
             "errors": results,
-            "predictions": self.error_predictions
+            "predictions": self.predictions.get('predictions', [])
         }

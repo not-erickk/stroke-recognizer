@@ -1,11 +1,11 @@
 import os
 import uuid
-from typing import Dict, Any, List
+from typing import Dict, Any
 from PIL import Image
 
 from recognizer.main.boxes.boxes import run_flow as run_boxes
 from recognizer.main.strokes.strokes import run_flow as run_strokes, save_test_outputs
-from recognizer.preprocessing.preprocessing import run_flow as run_preprocessing
+from api.preprocessing import run_flow as run_preprocessing
 
 def run_flow(image_path: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
     """

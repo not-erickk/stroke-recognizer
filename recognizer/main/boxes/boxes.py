@@ -1,11 +1,8 @@
-import os
-from pathlib import Path
-
 import pytesseract
 from PIL import Image, ImageDraw
 from typing import List, Tuple
-from recognizer.preprocessing import preprocessing
-from utils.paths import from_inputs
+from api import preprocessing
+
 
 class Boxes:
 
