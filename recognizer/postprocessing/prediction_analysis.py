@@ -262,4 +262,7 @@ class PredictionAnalysis:
                 "predictionIdx": sl_idx
             })
 
-        return results
+        return {
+            "errors": results,
+            "predictions": self.error_predictions
+        }

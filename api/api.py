@@ -5,7 +5,6 @@ import requests
 import logging
 from requests import RequestException
 import call_model
-from recognizer.postprocessing import postprocessor
 
 # Configure logging
 # Configure logging
@@ -56,7 +55,9 @@ def send_webhook(url: str, analysis: dict, max_retries: int=10, retry_delay: int
     return False
 
 def webhook_worker(data: dict) -> None:
-    # time.sleep(10)
+    from recognizer.postprocessing import postprocessor
+
+
     url, encoded_img, objective_word = data['webhook'], data['encodedImage'], data['objectiveWord']
     raw_prediction = call_model.execute(encoded_img)
     analysis = postprocessor.analyze(objective_word, raw_prediction)
