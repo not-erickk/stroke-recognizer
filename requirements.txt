@@ -17,3 +17,5 @@ tensorflow-text~=2.19.0
 pandas~=2.2.3
 SQLAlchemy~=2.0.41
 scikit-learn~=1.6.1
+roboflow~=1.1.65
+scipy~=1.15.3

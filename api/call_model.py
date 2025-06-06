@@ -12,8 +12,11 @@ PROJECT_NAME = "detect-and-classify-object-detection-izxgz"
 MODEL_VERSION = 1
 
 
-def initialize_roboflow_model():
+def initialize_model(local: bool = False):
     """Inicializa el modelo de Roboflow"""
+
+
+
     rf = Roboflow(api_key=API_KEY)
     project = rf.workspace().project(PROJECT_NAME)
     model = project.version(MODEL_VERSION).model
@@ -54,30 +57,23 @@ def perform_inference(model, image_data, confidence=40, overlap=30):
     Returns:
         dict: Resultados de la predicción
     """
-    # Si image_data es una cadena base64, convertirla a imagen
     if isinstance(image_data, str) and not os.path.isfile(image_data):
         try:
-            # Crear archivo temporal para la imagen
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
                 image = base64_to_image(image_data)
                 image.save(tmp_file.name)
                 temp_path = tmp_file.name
 
-            # Realizar predicción
             prediction = model.predict(temp_path, confidence=confidence, overlap=overlap)
 
-            # Limpiar archivo temporal
             os.unlink(temp_path)
 
         except Exception as e:
             raise Exception(f"Error procesando imagen base64: {str(e)}")
     else:
-        # Si es una ruta de archivo, usar directamente
         prediction = model.predict(image_data, confidence=confidence, overlap=overlap)
 
-    # Convertir a JSON para mejor visualización
     prediction_json = prediction.json()
-
     return prediction, prediction_json
 
 
@@ -166,40 +162,29 @@ def execute(base64_image_string):
             }
     """
     try:
-        # Inicializar modelo
-
-        model = initialize_roboflow_model()
-
-        # Realizar inferencia sobre la imagen base64
+        model = initialize_model()
         prediction, prediction_json = perform_inference(model, base64_image_string)
 
-        # Procesar resultados
         predictions = prediction_json.get('predictions', [])
 
-        # Create image with boxes
         original_image = base64_to_image(base64_image_string)
         preview_img = original_image.copy().convert("RGBA")
         draw = ImageDraw.Draw(preview_img)
 
-        # Draw prediction boxes
         for pred in predictions:
             x, y = pred.get('x', 0), pred.get('y', 0)
             w, h = pred.get('width', 0), pred.get('height', 0)
-            # Convert center coordinates to top-left format
             x1 = int(x - w / 2)
             y1 = int(y - h / 2)
             x2 = int(x + w / 2)
             y2 = int(y + h / 2)
             draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
-            # Add class label
             draw.text((x1, y1 - 20), pred.get('class', ''), fill='red')
 
-        # Convert image to base64
         buffered = io.BytesIO()
         preview_img.save(buffered, format="PNG")
         base64_analysis_img = base64.b64encode(buffered.getvalue()).decode()
 
-        # Format predictions
         formatted_predictions = []
         for pred in predictions:
             formatted_pred = {

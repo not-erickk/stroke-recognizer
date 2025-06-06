@@ -5,6 +5,7 @@ import requests
 import logging
 from requests import RequestException
 import call_model
+from recognizer.postprocessing import postprocessor
 
 # Configure logging
 # Configure logging
@@ -56,8 +57,9 @@ def send_webhook(url: str, analysis: dict, max_retries: int=10, retry_delay: int
 
 def webhook_worker(data: dict) -> None:
     # time.sleep(10)
-    url, encoded_img = data['webhook'], data['encodedImage']
-    analysis = call_model.execute(encoded_img)
+    url, encoded_img, objective_word = data['webhook'], data['encodedImage'], data['objectiveWord']
+    raw_prediction = call_model.execute(encoded_img)
+    analysis = postprocessor.analyze(objective_word, raw_prediction)
     success = send_webhook(url, analysis)
     if not success:
         logger.error("Webhook call failed after all retries")
@@ -68,6 +70,8 @@ def missing_field(data: dict):
         return 'encodedImage'
     if 'webhook' not in data:
         return 'webhook'
+    if 'objectiveWord' not in data:
+        return 'objectiveWord'
     return None
 
 
